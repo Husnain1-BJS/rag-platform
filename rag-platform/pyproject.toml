@@ -1,0 +1,23 @@
+[tool.poetry]
+name = &quot;rag-platform&quot;
+version = &quot;0.1.0&quot;
+description = &quot;&quot;
+authors = [&quot;Your Name &lt;you@example.com&gt;&quot;]
+
+[tool.poetry.dependencies]
+python = &quot;3.11&quot;
+fastapi = &quot;^0.104.0&quot;
+uvicorn = &quot;^0.27.0&quot;
+pydantic = &quot;^2.5.0&quot;
+pydantic-settings = &quot;^2.1.0&quot;
+qdrant-client = &quot;^1.7.0&quot;
+sentence-transformers = &quot;^2.6.1&quot;
+langchain-text-splitters = &quot;^0.0.1&quot;
+httpx = &quot;^0.25.0&quot;
+python-dotenv = &quot;^1.0.0&quot;
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = [&quot;poetry-core&quot;]
+build-backend = &quot;poetry.core.masonry.api&quot;
