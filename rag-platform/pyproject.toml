@@ -1,23 +1,35 @@
 [tool.poetry]
-name = &quot;rag-platform&quot;
-version = &quot;0.1.0&quot;
-description = &quot;&quot;
-authors = [&quot;Your Name &lt;you@example.com&gt;&quot;]
+name = "rag-platform"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = &quot;3.11&quot;
-fastapi = &quot;^0.104.0&quot;
-uvicorn = &quot;^0.27.0&quot;
-pydantic = &quot;^2.5.0&quot;
-pydantic-settings = &quot;^2.1.0&quot;
-qdrant-client = &quot;^1.7.0&quot;
-sentence-transformers = &quot;^2.6.1&quot;
-langchain-text-splitters = &quot;^0.0.1&quot;
-httpx = &quot;^0.25.0&quot;
-python-dotenv = &quot;^1.0.0&quot;
+python = "^3.11"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+qdrant-client = "^1.7.0"
+sentence-transformers = "^2.6.1"
+langchain-text-splitters = "^0.3.0"
+python-dotenv = "^1.0.0"
+openai = "^1.10.0"
+httpx = "^0.25.0"
+ragas = "^0.2.10"
+datasets = "^3.4.0"
+langchain-openai = "^0.3.0"
 
-[tool.poetry.dev-dependencies]
+# Observability
+structlog = "^24.1.0"
+prometheus-client = "^0.20.0"
+opentelemetry-api = "*"
+opentelemetry-sdk = "*"
+opentelemetry-instrumentation-fastapi = "*"
+opentelemetry-instrumentation-httpx = "*"
+opentelemetry-exporter-otlp = "*"
+opentelemetry-exporter-prometheus = "*"
 
 [build-system]
-requires = [&quot;poetry-core&quot;]
-build-backend = &quot;poetry.core.masonry.api&quot;
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

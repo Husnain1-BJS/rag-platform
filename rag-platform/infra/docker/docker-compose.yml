@@ -1,4 +1,4 @@
-version: "3.8"
+
 
 services:
   qdrant:
@@ -9,6 +9,10 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      retries: 5
 
   api:
     build:
@@ -19,8 +23,12 @@ services:
     env_file:
       - .env
     depends_on:
-      - qdrant
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - hf_cache:/root/.cache/huggingface
     restart: unless-stopped
 
 volumes:
   qdrant_storage:
+  hf_cache:
