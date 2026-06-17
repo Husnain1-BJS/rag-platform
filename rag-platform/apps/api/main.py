@@ -58,14 +58,13 @@ def rerank_chunks(chunks: List[Dict], question: str, top_k: int) -> List[Dict]:
     if reranker is None or not chunks:
         return chunks[:top_k]
     
-    scores = []
-    for chunk in chunks:
-        text = chunk.get("text", "")
-        score = reranker.predict([(question, text)])
-        scores.append((chunk, score))
+    # Batch reranking: process all pairs at once (O(1) model calls vs O(n))
+    pairs = [(question, chunk.get("text", "")) for chunk in chunks]
+    scores = reranker.predict(pairs)
     
-    sorted_chunks = sorted(scores, key=lambda x: x[1], reverse=True)
-    return [chunk for chunk, _ in sorted_chunks[:top_k]]
+    # Sort by score descending
+    sorted_pairs = sorted(zip(chunks, scores), key=lambda x: x[1], reverse=True)
+    return [chunk for chunk, _ in sorted_pairs[:top_k]]
 
 
 def build_filter(
