@@ -8,6 +8,7 @@ from qdrant_client.models import (
     MatchValue,
     Range,
     SparseVector,
+    Prefetch,
 )
 from sentence_transformers import SentenceTransformer
 import asyncio
@@ -33,6 +34,38 @@ from .metrics import (
     get_registry,
 )
 from .tracing import configure_tracing, instrument_fastapi, get_tracer, SpanAttributes
+
+
+def bm25_tokenize_query(text: str) -> SparseVector:
+    """Compute BM25 sparse vector from query text for hybrid search."""
+    import re
+    from collections import Counter
+    
+    tokens = re.findall(r'[a-z0-9]+', text.lower())
+    tokens = [t for t in tokens if len(t) > 2]
+    
+    if not tokens:
+        return SparseVector(indices=[], values=[])
+    
+    tf = Counter(tokens)
+    max_tf = max(tf.values()) if tf else 1
+    
+    seen_indices = set()
+    indices = []
+    values = []
+    
+    for token, count in tf.items():
+        score = 0.5 + 0.5 * (count / max_tf)
+        
+        token_idx = hash(token) % 30000
+        while token_idx in seen_indices:
+            token_idx = (token_idx + 1) % 30000
+        seen_indices.add(token_idx)
+        
+        indices.append(token_idx)
+        values.append(float(score))
+    
+    return SparseVector(indices=indices, values=values)
 
 import sys
 from pathlib import Path
@@ -272,15 +305,36 @@ async def query(request: QueryRequest):
             if qdrant_filter:
                 span.set_attribute(SpanAttributes.QDRANT_FILTER, str(qdrant_filter))
             
-            # Vector search
+            # Vector search (hybrid or dense-only)
             qdrant_start = time.perf_counter()
-            search_result = app.state.qdrant.query_points(
-                collection_name=settings.COLLECTION_NAME,
-                query=question_vector,
-                limit=search_k,
-                with_payload=True,
-                query_filter=qdrant_filter,
-            )
+            
+            if search_type == "hybrid" and settings.ENABLE_HYBRID_SEARCH:
+                # Hybrid search: combine dense vector + BM25 sparse vector
+                sparse_vector = bm25_tokenize_query(question)
+                
+                search_result = app.state.qdrant.query_points(
+                    collection_name=settings.COLLECTION_NAME,
+                    prefetch=[
+                        Prefetch(query=question_vector, using="dense", limit=search_k),
+                        Prefetch(query=sparse_vector, using="text", limit=search_k),
+                    ],
+                    query=question_vector,
+                    limit=search_k,
+                    with_payload=True,
+                    query_filter=qdrant_filter,
+                )
+                span.set_attribute("search.implementation", "hybrid_prefetch")
+            else:
+                # Dense-only search
+                search_result = app.state.qdrant.query_points(
+                    collection_name=settings.COLLECTION_NAME,
+                    query=question_vector,
+                    limit=search_k,
+                    with_payload=True,
+                    query_filter=qdrant_filter,
+                )
+                span.set_attribute("search.implementation", "dense_only")
+            
             record_qdrant_search(time.perf_counter() - qdrant_start)
             
             hits = search_result.points

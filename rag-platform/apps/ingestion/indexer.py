@@ -1,14 +1,61 @@
 """Upsert chunk vectors to Qdrant with connection pooling and deduplication."""
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, VectorParams, OptimizersConfigDiff
+from qdrant_client.models import PointStruct, VectorParams, SparseVectorParams, OptimizersConfigDiff, SparseVector
 import uuid
 from typing import List, Dict, Optional, Set
 import os
 import json
+import re
 from pathlib import Path
+import math
+from collections import Counter
 
 
 _clients: Dict[str, QdrantClient] = {}
+
+
+def bm25_tokenize(text: str) -> List[str]:
+    """Simple BM25 tokenizer: lowercase, split on non-alphanumeric, filter short tokens."""
+    tokens = re.findall(r'[a-z0-9]+', text.lower())
+    return [t for t in tokens if len(t) > 2]
+
+
+def compute_bm25_sparse(text: str, idf_cache: Dict[str, float] = None) -> SparseVector:
+    """Compute BM25 sparse vector from text.
+    
+    Returns a SparseVector with token indices and TF-IDF scores.
+    Uses a simple TF scoring since IDF requires corpus statistics.
+    """
+    tokens = bm25_tokenize(text)
+    if not tokens:
+        return SparseVector(indices=[], values=[])
+    
+    # Term frequency with logarithmic scaling
+    tf = Counter(tokens)
+    max_tf = max(tf.values()) if tf else 1
+    
+    seen_indices = set()
+    indices = []
+    values = []
+    
+    for token, count in tf.items():
+        # Normalized TF score
+        score = 0.5 + 0.5 * (count / max_tf)
+        
+        # Apply IDF if available
+        if idf_cache and token in idf_cache:
+            score *= idf_cache[token]
+        
+        # Use hash of token as index, handle collisions by incrementing
+        token_idx = hash(token) % 30000
+        while token_idx in seen_indices:
+            token_idx = (token_idx + 1) % 30000
+        seen_indices.add(token_idx)
+        
+        indices.append(token_idx)
+        values.append(float(score))
+    
+    return SparseVector(indices=indices, values=values)
 
 
 def get_client(
@@ -33,20 +80,25 @@ def create_collection_if_not_exists(
     collection: str,
     vector_size: int = 768,
 ) -> None:
-    """Create collection with dense vectors."""
+    """Create collection with dense and sparse (BM25) vectors for hybrid search."""
     try:
         client.get_collection(collection_name=collection)
         print(f"Collection '{collection}' already exists")
     except Exception:
         client.create_collection(
             collection_name=collection,
-            vectors_config=VectorParams(
-                size=vector_size,
-                distance="Cosine",
-            ),
+            vectors_config={
+                "dense": VectorParams(
+                    size=vector_size,
+                    distance="Cosine",
+                ),
+            },
+            sparse_vectors_config={
+                "text": SparseVectorParams(),
+            },
             optimizers_config=OptimizersConfigDiff(indexing_threshold=1),
         )
-        print(f"Created collection '{collection}'")
+        print(f"Created collection '{collection}' with hybrid search support")
 
 
 def get_existing_ids(client: QdrantClient, collection: str) -> Set[str]:
@@ -157,9 +209,12 @@ def upsert_chunks(
                 skipped += 1
                 continue
 
+            # Generate BM25 sparse vector from text
+            sparse_vector = compute_bm25_sparse(chunk.get("text", ""))
+            
             point = PointStruct(
                 id=point_id,
-                vector=vector,
+                vector={"dense": vector, "text": sparse_vector},
                 payload=payload,
             )
             points.append(point)
