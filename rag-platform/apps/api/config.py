@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     API_KEY: str = ""
     RATE_LIMIT_PER_MINUTE: int = 30
 
+    # Ingestion batch size (CVEs per batch to avoid OOM)
+    INGEST_BATCH_SIZE: int = 500
+
     class Config:
         env_file = ".env"
         extra = "allow"

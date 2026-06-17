@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def parse_cve_file(filepath: Path, limit: Optional[int] = None) -> List[Dict]:
-    """Parse NVD CVE JSON file (v2.0 schema).
+    """Parse NVD CVE JSON file (v2.0 schema). Loads all into memory.
 
     Args:
         filepath: Path to the gzipped JSON file.
