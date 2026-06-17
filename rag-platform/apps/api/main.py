@@ -174,8 +174,8 @@ async def lifespan(app: FastAPI):
             logger.info("using_file_based_qdrant_fallback", path=qdrant_path)
     
     app.state.llm = OpenAI(
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url=settings.OPENROUTER_BASE_URL,
+        api_key=settings.NVIDIA_API_KEY,
+        base_url=settings.NVIDIA_BASE_URL,
     )
     
     try:
@@ -246,7 +246,7 @@ async def health():
     return {
         "status": overall_status,
         "service": "rag-api",
-        "model": settings.OPENROUTER_MODEL,
+        "model": settings.NVIDIA_MODEL,
         "qdrant_status": qdrant_status,
         "llm_status": llm_status,
         "indexed_vectors": indexed_vectors,
@@ -385,14 +385,10 @@ async def query(request: QueryRequest):
             # LLM call
             llm_start = time.perf_counter()
             with tracer.start_as_current_span("llm.call") as llm_span:
-                llm_span.set_attribute(SpanAttributes.LLM_MODEL, settings.OPENROUTER_MODEL)
+                llm_span.set_attribute(SpanAttributes.LLM_MODEL, settings.NVIDIA_MODEL)
                 
                 response = app.state.llm.chat.completions.create(
-                    model=settings.OPENROUTER_MODEL,
-                    extra_headers={
-                        "HTTP-Referer": "http://localhost:8000",
-                        "X-Title": "ThreatIntelRAG",
-                    },
+                    model=settings.NVIDIA_MODEL,
                     messages=[
                         {"role": "system", "content": system_message},
                         {"role": "user", "content": user_message},
@@ -410,9 +406,9 @@ async def query(request: QueryRequest):
                     completion_tokens = response.usage.completion_tokens or 0
                     llm_span.set_attribute(SpanAttributes.LLM_TOKENS_PROMPT, prompt_tokens)
                     llm_span.set_attribute(SpanAttributes.LLM_TOKENS_COMPLETION, completion_tokens)
-                    record_llm_request(settings.OPENROUTER_MODEL, "success", time.perf_counter() - llm_start, prompt_tokens, completion_tokens)
+                    record_llm_request(settings.NVIDIA_MODEL, "success", time.perf_counter() - llm_start, prompt_tokens, completion_tokens)
                 else:
-                    record_llm_request(settings.OPENROUTER_MODEL, "success", time.perf_counter() - llm_start)
+                    record_llm_request(settings.NVIDIA_MODEL, "success", time.perf_counter() - llm_start)
             
             total_duration = time.perf_counter() - start_time
             record_rag_query(search_type, reranked, total_duration, len(context_chunks))
@@ -441,7 +437,7 @@ async def query(request: QueryRequest):
         except Exception as e:
             total_duration = time.perf_counter() - start_time
             record_rag_query(search_type, False, total_duration, 0)
-            record_llm_request(settings.OPENROUTER_MODEL, "error", 0)
+            record_llm_request(settings.NVIDIA_MODEL, "error", 0)
             
             logger.error(
                 "query_failed",

@@ -30,7 +30,7 @@ poetry install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your OPENROUTER_API_KEY
+# Edit .env with your NVIDIA_API_KEY
 ```
 
 ### Run Locally
@@ -81,8 +81,8 @@ docker-compose -f infra/docker/docker-compose.yml up --build
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENROUTER_API_KEY` | - | Required for LLM |
-| `OPENROUTER_MODEL` | `nvidia/nemotron-3-ultra-550b-a55b:free` | Free model |
+| `NVIDIA_API_KEY` | - | Required for LLM |
+| `NVIDIA_MODEL` | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build API model |
 | `QDRANT_PATH` | `./qdrant_data` | Local Qdrant storage |
 | `API_KEY` | `` | Empty = auth disabled |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Requests per IP per minute |

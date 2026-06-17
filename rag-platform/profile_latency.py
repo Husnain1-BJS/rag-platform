@@ -6,9 +6,9 @@ from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 
 # Load from env or use defaults
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 
 print("=" * 60)
@@ -37,10 +37,10 @@ print(f"   Total time: {embed_time:.2f}s")
 print(f"   Per text: {embed_time/len(test_texts)*1000:.1f}ms")
 print(f"   Embedding dim: {embeddings.shape[1]}")
 
-# 2. Profile LLM (OpenRouter)
-if OPENROUTER_API_KEY:
-    print(f"\n3. Testing LLM: {OPENROUTER_MODEL}")
-    client = OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
+# 2. Profile LLM (NVIDIA Build API)
+if NVIDIA_API_KEY:
+    print(f"\n3. Testing LLM: {NVIDIA_MODEL}")
+    client = OpenAI(api_key=NVIDIA_API_KEY, base_url=NVIDIA_BASE_URL)
     
     messages = [
         {"role": "system", "content": "You are a cybersecurity assistant."},
@@ -50,7 +50,7 @@ if OPENROUTER_API_KEY:
     print("   First request (cold)...")
     start = time.perf_counter()
     response = client.chat.completions.create(
-        model=OPENROUTER_MODEL,
+        model=NVIDIA_MODEL,
         messages=messages,
         max_tokens=512,
     )
@@ -63,7 +63,7 @@ if OPENROUTER_API_KEY:
     print("   Second request (warm)...")
     start = time.perf_counter()
     response = client.chat.completions.create(
-        model=OPENROUTER_MODEL,
+        model=NVIDIA_MODEL,
         messages=messages,
         max_tokens=512,
     )
@@ -79,15 +79,14 @@ if OPENROUTER_API_KEY:
     print(f"\nLLM is ~{llm_time/embed_time:.0f}x SLOWER than batch embedding")
     print(f"LLM is the BOTTLENECK for query latency")
 else:
-    print("\n3. Skipping LLM test (no OPENROUTER_API_KEY)")
+    print("\n3. Skipping LLM test (no NVIDIA_API_KEY)")
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
     print(f"Embedding (30 texts): {embed_time:.2f}s total, {embed_time/len(test_texts)*1000:.1f}ms/text")
-    print("Set OPENROUTER_API_KEY to profile LLM")
+    print("Set NVIDIA_API_KEY to profile LLM")
 
 print("\nRecommendation: LLM is the bottleneck. Consider:")
-print("  - Smaller/faster model (e.g., llama-3.1-8b-instruct)")
 print("  - Reduce max_tokens")
 print("  - Enable streaming for perceived latency")
 print("  - Cache frequent queries")

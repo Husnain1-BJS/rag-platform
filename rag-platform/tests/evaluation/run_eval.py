@@ -115,9 +115,9 @@ def main():
     print(f"Dataset size: {len(dataset)}")
     print(dataset)
 
-    # Configure RAGAS to use OpenRouter LLM
+    # Configure RAGAS to use NVIDIA Build API
     print("\n" + "=" * 60)
-    print("Configuring RAGAS with OpenRouter LLM...")
+    print("Configuring RAGAS with NVIDIA Build API...")
     print("=" * 60)
 
     from langchain_openai import ChatOpenAI
@@ -125,20 +125,19 @@ def main():
     from ragas import evaluate
     from ragas.metrics import faithfulness, answer_relevancy, context_precision
 
-    # Get OpenRouter settings from environment
-    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-    openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    # Use a faster model for RAGAS judge LLM
-    openrouter_model = os.getenv("RAGAS_EVAL_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
+    # Get NVIDIA settings from environment
+    nvidia_api_key = os.getenv("NVIDIA_API_KEY")
+    nvidia_base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    nvidia_model = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
 
-    if not openrouter_api_key:
-        print("ERROR: OPENROUTER_API_KEY not set in environment")
+    if not nvidia_api_key:
+        print("ERROR: NVIDIA_API_KEY not set in environment")
         sys.exit(1)
 
     llm = ChatOpenAI(
-        model=openrouter_model,
-        openai_api_key=openrouter_api_key,
-        openai_api_base=openrouter_base_url,
+        model=nvidia_model,
+        openai_api_key=nvidia_api_key,
+        openai_api_base=nvidia_base_url,
         temperature=0,
         max_tokens=1024,
     )
