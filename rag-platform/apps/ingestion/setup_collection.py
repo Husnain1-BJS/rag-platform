@@ -1,6 +1,6 @@
 """Create Qdrant collection for threat intelligence vectors."""
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance
+from qdrant_client.models import VectorParams, Distance, OptimizersConfigDiff
 
 
 def main():
@@ -17,6 +17,7 @@ def main():
         client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=vector_size, distance=distance),
+            optimizers_config=OptimizersConfigDiff(indexing_threshold=1),
         )
         print("collection threat_intel ready")
 

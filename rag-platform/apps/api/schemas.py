@@ -35,6 +35,7 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     answer: str
     sources: List[str] = []
+    source_scores: List[float] = []
     question: str
     context_used: int
     search_type: str

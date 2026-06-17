@@ -1,6 +1,6 @@
 """Upsert chunk vectors to Qdrant with connection pooling and deduplication."""
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, VectorParams
+from qdrant_client.models import PointStruct, VectorParams, OptimizersConfigDiff
 import uuid
 from typing import List, Dict, Optional, Set
 import os
@@ -44,6 +44,7 @@ def create_collection_if_not_exists(
                 size=vector_size,
                 distance="Cosine",
             ),
+            optimizers_config=OptimizersConfigDiff(indexing_threshold=1),
         )
         print(f"Created collection '{collection}'")
 

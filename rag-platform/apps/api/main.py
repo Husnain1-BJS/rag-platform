@@ -287,6 +287,7 @@ async def query(request: QueryRequest):
             hits = search_result.points
             
             context_chunks = []
+            source_scores = []
             for hit in hits:
                 payload = hit.payload or {}
                 context_chunks.append({
@@ -296,6 +297,7 @@ async def query(request: QueryRequest):
                     "source": payload.get("source", "unknown"),
                     "published_date": payload.get("published_date", ""),
                 })
+                source_scores.append(hit.score)
             
             span.set_attribute(SpanAttributes.CONTEXT_CHUNKS, len(context_chunks))
             
@@ -308,6 +310,14 @@ async def query(request: QueryRequest):
                 record_rerank(time.perf_counter() - rerank_start)
             
             sources = list(dict.fromkeys(c["cve_id"] for c in context_chunks if c["cve_id"] != "unknown"))
+            # Match scores to unique sources (take first occurrence score)
+            seen = set()
+            matched_scores = []
+            for c, score in zip(context_chunks, source_scores):
+                cve_id = c["cve_id"]
+                if cve_id not in seen and cve_id != "unknown":
+                    seen.add(cve_id)
+                    matched_scores.append(score)
             context_parts = [f"ID: {c['cve_id']} | Severity: {c['severity']}\n{c['text']}" for c in context_chunks]
             context = "\n\n".join(context_parts)
             
@@ -334,7 +344,9 @@ async def query(request: QueryRequest):
                         {"role": "system", "content": system_message},
                         {"role": "user", "content": user_message},
                     ],
-                    max_tokens=1024,
+                    max_tokens=settings.LLM_MAX_TOKENS,
+                    temperature=settings.LLM_TEMPERATURE,
+                    timeout=settings.LLM_TIMEOUT,
                 )
                 
                 answer = response.choices[0].message.content
@@ -365,6 +377,7 @@ async def query(request: QueryRequest):
             return {
                 "answer": answer,
                 "sources": sources,
+                "source_scores": matched_scores,
                 "question": question,
                 "context_used": len(context_chunks),
                 "search_type": search_type,
@@ -387,6 +400,7 @@ async def query(request: QueryRequest):
             return {
                 "answer": f"Error: {str(e)}",
                 "sources": [],
+                "source_scores": [],
                 "question": question,
                 "context_used": 0,
                 "search_type": search_type,

@@ -1,4 +1,4 @@
-
+version: "3.9"
 
 services:
   qdrant:
@@ -21,12 +21,30 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - ../../.env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_PATH=
     depends_on:
       qdrant:
         condition: service_healthy
     volumes:
       - hf_cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "8501:8501"
+    env_file:
+      - ../../.env
+    environment:
+      - API_URL=http://api:8000/query
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:
