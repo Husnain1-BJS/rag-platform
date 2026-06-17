@@ -31,7 +31,10 @@ def fetch_contexts_from_qdrant(question: str, top_k: int = 5) -> list[str]:
         from apps.api.config import settings
 
         model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        qdrant = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+        if settings.QDRANT_PATH:
+            qdrant = QdrantClient(path=settings.QDRANT_PATH)
+        else:
+            qdrant = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
 
         vector = model.encode([question], normalize_embeddings=True)[0].tolist()
         hits = qdrant.query_points(

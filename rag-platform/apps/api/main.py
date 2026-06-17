@@ -6,6 +6,7 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
+    MatchAny,
     Range,
     SparseVector,
     Prefetch,
@@ -109,22 +110,18 @@ def build_filter(
     conditions = []
     
     if severity_filter:
-        conditions.append(
-            FieldCondition(
-                key="severity",
-                match=MatchValue(value=severity_filter[0]) if len(severity_filter) == 1 
-                else {"match_any": {"values": severity_filter}}
-            )
-        )
+        if len(severity_filter) == 1:
+            match = MatchValue(value=severity_filter[0])
+        else:
+            match = MatchAny(any=severity_filter)
+        conditions.append(FieldCondition(key="severity", match=match))
     
     if source_filter:
-        conditions.append(
-            FieldCondition(
-                key="source",
-                match=MatchValue(value=source_filter[0]) if len(source_filter) == 1
-                else {"match_any": {"values": source_filter}}
-            )
-        )
+        if len(source_filter) == 1:
+            match = MatchValue(value=source_filter[0])
+        else:
+            match = MatchAny(any=source_filter)
+        conditions.append(FieldCondition(key="source", match=match))
     
     if date_from or date_to:
         range_conditions = {}

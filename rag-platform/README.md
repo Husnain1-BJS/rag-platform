@@ -16,7 +16,7 @@ A cybersecurity threat intelligence platform using RAG (Retrieval-Augmented Gene
 
 - Python 3.11+
 - Poetry (for dependency management)
-- OpenRouter API key (for LLM)
+- NVIDIA API key (for LLM)
 
 ### Installation
 

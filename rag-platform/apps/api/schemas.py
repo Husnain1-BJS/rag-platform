@@ -8,6 +8,7 @@ class HealthResponse(BaseModel):
     service: str
     model: str
     qdrant_status: str = "unknown"
+    llm_status: str = "unknown"
     indexed_vectors: int = 0
 
 
